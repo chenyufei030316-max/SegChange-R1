@@ -26,6 +26,8 @@ def main():
     logger.info('Running with config:')
     logger.info(pprint.pformat(cfg.__dict__))
     device = cfg.test.device
+    
+    # print(cfg.test.weights_dir, cfg.test.device)
 
     model = load_model(cfg, cfg.test.weights_dir, cfg.test.device)
 

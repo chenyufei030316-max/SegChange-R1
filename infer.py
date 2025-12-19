@@ -16,11 +16,14 @@ def main():
     cfg = get_args_config()
     # predict(cfg)
     # names = ['BL1_5', 'BL2_5', 'BL3_5', 'BL4_5', 'BL5_5', 'HC_5', 'ZK_5']
-    names = ['ZK_5']
+    names = ['change']
     # 遍历名称列表，动态生成 input_dir 并调用 predict
     for name in names:
         cfg.infer.name = name
-        cfg.infer.input_dir = f'/sxs/zhoufei/SegChange-R2/data/{name}'  # 修改 input_dir 路径
+        # cfg.infer.input_dir = f'./data/{name}/test' 
+        cfg.infer.input_dir = '/hdd10Tb/zhangyi/SegChange-R1/data/change/test'
+        # cfg.infer.input_dir = f'./data/{name}/FP_test'  # 修改 input_dir 路径
+        print(cfg)
         predict(cfg)
 
 

@@ -29,6 +29,7 @@ class VisualEncoder(nn.Module):
         returns list of multi-scale features:
           feats[i] is [B, C_i, H/2^{i+2}, W/2^{i+2}]
         """
+        # print(x.shape)
         feats = self.backbone(x)
         # 将每个特征图的维度从 [B, H, W, C] 转换为 [B, C, H, W]
         feats = [feat.permute(0, 3, 1, 2).contiguous() for feat in feats]

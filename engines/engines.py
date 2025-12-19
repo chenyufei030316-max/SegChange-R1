@@ -37,6 +37,7 @@ def train(cfg, model, criterion, dataloader, optimizer, device, epoch):
             labels = labels.to(device)
 
             optimizer.zero_grad()
+            # print(images_a.shape, images_b.shape, embs.shape)
             outputs = model(images_a, images_b, embs)
             loss = criterion(outputs, labels)
             loss.backward()

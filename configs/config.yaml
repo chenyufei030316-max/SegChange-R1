@@ -4,12 +4,14 @@ seed: 42
 output_dir: ./work_dirs
 num_workers: 12
 resume: null  # 如果存在，则恢复训练
-prompt: 'Buildings with changes, Mound changes.'
+# prompt: 'Buildings with changes, Mound changes.'
+prompt: 'Landslide changes.'
 onnx_weights: './examples/ONNXRuntime/weights'
 
 data:
   data_root: './data/change'
-  data_format: 'custom'                           # [default, custom]
+  # data_format: 'custom'                           # [default, custom]
+  data_format: 'default'
   transforms:
     apply_prob: 0.5                               # 应用概率
     color_jitter: 0.2                             # 颜色抖动
@@ -31,7 +33,7 @@ model:
   out_dims: [256, 256, 256, 256]
   use_token_connector: False                      # 是否降低 token 维度
   pretrained: True                                # 是否使用预训练的模型参数
-  img_size: 512
+  img_size: 256
   text_encoder_name: "bert-base-uncased"          # [microsoft/phi-1_5, bert-base-uncased]
   desc_embs: null                                 # 文本描述向量地址 "./weights/embeddings.pt"
   freeze_text_encoder: True                       # 冻结模型参数
@@ -62,11 +64,11 @@ training:
   threshold: 0.5
 
 test:
-  img_dirs: './data/change'
+  img_dirs: './data/change/test'
   batch_size: 1
   threshold: 0.5
   postprocess: False  # 控制是否应用后处理
-  device: 'cuda:1'
+  device: 'cuda:0'
   name: "test"
   weights_dir: './work_dirs/train_0/checkpoints/best_iou.pth'
   save_dir: "./work_dirs"
@@ -75,10 +77,10 @@ test:
 
 infer:
   name: 'BL2_5'
-  input_dir: '/data/BL2_5'
+  input_dir: '/data/change'
   chunk_size: 25600  # 25600
   postprocess: False  # 控制是否应用后处理
   weights_dir: './work_dirs/train_0/checkpoints/best_iou.pth'
   output_dir: './outputs'
-  threshold: 0.5
-  device: 'cuda:1'
+  threshold: 0.75
+  device: 'cuda:0'

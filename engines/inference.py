@@ -20,6 +20,7 @@ from models import build_model, build_embs, PostProcessor
 from utils import setup_logging, get_output_dir
 from tqdm import tqdm
 import rasterio
+import glob
 
 
 def read_image_in_chunks(image_path, chunk_size=25600):
@@ -173,7 +174,7 @@ def preprocess_image(img_a, img_b, device):
     return img_a, img_b
 
 def slide_window_inference(model, postprocessor, img_a, img_b, embs, device, output_dir, threshold=0.5, crop_size=512, overlap=0,
-                           global_coord_offset=None, postprocess=False):
+                           global_coord_offset=None, postprocess=False, name=None):
     """
     滑动窗口推理函数
     Args:
@@ -245,9 +246,9 @@ def slide_window_inference(model, postprocessor, img_a, img_b, embs, device, out
             if global_coord_offset:
                 global_x = global_coord_offset[0] + x
                 global_y = global_coord_offset[1] + y
-                combined_path = os.path.join(mask_dir, f"{global_x}_{global_y}_combined.jpg")
+                combined_path = os.path.join(mask_dir, f"{name}_{global_x}_{global_y}_combined.png") if name else os.path.join(mask_dir, f"{x}_{y}_combined.png")
             else:
-                combined_path = os.path.join(mask_dir, f"{x}_{y}_combined.jpg")
+                combined_path = os.path.join(mask_dir, f"{name}_{x}_{y}_combined.png") if name else os.path.join(mask_dir, f"{x}_{y}_combined.png")
 
             # 绘制mask边界
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -315,10 +316,21 @@ def predict(cfg):
                       freeze_text_encoder=cfg.model.freeze_text_encoder, device=device)
     logger.info(f'desc_embs shape:{embs.shape}')
 
-    filename = [filename for filename in os.listdir(input_dir) if filename.endswith('.tif')]
+    # print(os.listdir(input_dir))
+    filename = [filename for filename in os.listdir(input_dir)]
+    # print(input_dir)
+    # filename = [filename for filename in os.listdir(input_dir) if filename.endswith(('.tif', '.tiff', '.png', '.jpg', '.jpeg'))]
     filename = sorted(filename)
+    # print(filename)
     a_image_path = os.path.join(input_dir, filename[0])
+    a_image_path = glob.glob(f'{a_image_path}/*.png') + glob.glob(f'{a_image_path}/*.jpg')
+    a_image_path = sorted(a_image_path)
     b_image_path = os.path.join(input_dir, filename[1])
+    b_image_path = glob.glob(f'{b_image_path}/*.png') + glob.glob(f'{b_image_path}/*.jpg')
+    b_image_path = sorted(b_image_path)
+    print(a_image_path, b_image_path)
+    
+    count = 0
 
     if a_image_path is None or b_image_path is None:
         logger.error("No suitable a or b image found.")
@@ -330,39 +342,51 @@ def predict(cfg):
         logger.info(f"Using chunked inference with chunk_size={chunk_size} and overlap=0")
 
         # 分块读取图像
-        a_chunks, (a_height, a_width) = read_image_in_chunks(a_image_path, chunk_size)
-        b_chunks, (b_height, b_width) = read_image_in_chunks(b_image_path, chunk_size)
+        # print(a_image_path[2], b_image_path[2])
+        for i in range(len(a_image_path)):
+            logger.info(f"Processing chunked image pair: {a_image_path[i]} and {b_image_path[i]}")
+            a_chunks, (a_height, a_width) = read_image_in_chunks(a_image_path[i], chunk_size)
+            b_chunks, (b_height, b_width) = read_image_in_chunks(b_image_path[i], chunk_size)
 
-        logger.info(
-            f"a_chunks: {len(a_chunks)}, b_chunks: {len(b_chunks)}, a_size: {a_height, a_width}, b_size: {b_height, b_width}")
-        # 创建空掩码用于最终结果
-        result_mask = np.zeros((a_height, a_width), dtype=np.uint8)
-        count_mask = np.zeros_like(result_mask)
+            logger.info(
+                f"a_chunks: {len(a_chunks)}, b_chunks: {len(b_chunks)}, a_size: {a_height, a_width}, b_size: {b_height, b_width}")
+            # 创建空掩码用于最终结果
+            result_mask = np.zeros((a_height, a_width), dtype=np.uint8)
+            count_mask = np.zeros_like(result_mask)
 
-        logger.info("Starting chunk-based inference...")
+            logger.info("Starting chunk-based inference...")
 
-        # 遍历每个块进行推理
-        for (x_a, y_a, img_a_patch), (x_b, y_b, img_b_patch) in zip(a_chunks, b_chunks):
-            # 确保两幅图像总大小一致
-            if img_a_patch.shape != img_b_patch.shape:
-                logger.warning(f"Warning: Image sizes differ. Resizing image b to match a.")
-                img_b_patch = cv2.resize(img_b_patch, (img_a_patch.shape[1], img_a_patch.shape[0]))
+            # 遍历每个块进行推理
+            for (x_a, y_a, img_a_patch), (x_b, y_b, img_b_patch) in zip(a_chunks, b_chunks):
+                # 确保两幅图像总大小一致
+                if img_a_patch.shape != img_b_patch.shape:
+                    logger.warning(f"Warning: Image sizes differ. Resizing image b to match a.")
+                    img_b_patch = cv2.resize(img_b_patch, (img_a_patch.shape[1], img_a_patch.shape[0]))
 
-            # 推理
-            with torch.no_grad():
-                mask = slide_window_inference(model, postprocessor, img_a_patch, img_b_patch, embs, device, output_dir, threshold,
-                                              global_coord_offset=(x_a, y_a), postprocess=cfg.infer.postprocess)
+                name = os.path.basename(a_image_path[i]).split('.')[0]
+                # 推理
+                with torch.no_grad():
+                    mask = slide_window_inference(model, postprocessor, img_a_patch, img_b_patch, embs, device, output_dir, threshold,
+                                                global_coord_offset=(x_a, y_a), postprocess=cfg.infer.postprocess, name=name)
 
-            # 合并到最终掩码
-            result_mask[y_a:y_a + mask.shape[0], x_a:x_a + mask.shape[1]] += mask
-            count_mask[y_a:y_a + mask.shape[0], x_a:x_a + mask.shape[1]] += 1
+                # 合并到最终掩码
+                result_mask[y_a:y_a + mask.shape[0], x_a:x_a + mask.shape[1]] += mask
+                count_mask[y_a:y_a + mask.shape[0], x_a:x_a + mask.shape[1]] += 1
 
-        # 平均融合
-        result_mask = (result_mask / count_mask).astype(np.uint8)
+            # 平均融合
+            result_mask = (result_mask / count_mask).astype(np.uint8)
+            
+            # 保存最终掩码为 tif 格式 
+            output_path = os.path.join(output_dir, f"{name}_result_mask.tif")
+            # if sum(result_mask.flatten()) == 0:
+            #     logger.info(f"No changes detected in image pair: {a_image_path[i]} and {b_image_path[i]}. Saving empty mask.")  
+                # count += 1
+            cv2.imwrite(output_path, result_mask)
 
     else:
         logger.info("Using full-image inference")
         # 读取图像
+        # print(a_image_path, b_image_path)
         img_a = cv2.imread(a_image_path)
         img_b = cv2.imread(b_image_path)
 
@@ -380,7 +404,12 @@ def predict(cfg):
         result_mask = slide_window_inference(model, postprocessor, img_a, img_b, embs, device, output_dir, threshold, postprocess=cfg.infer.postprocess)
 
     # 保存最终掩码为 tif 格式
-    output_path = os.path.join(output_dir, "result_mask.tif")
-    cv2.imwrite(output_path, result_mask)
+    # output_path = os.path.join(output_dir, "result_mask.tif")
+    # cv2.imwrite(output_path, result_mask)
+
+    if sum(result_mask.flatten()) == 0:
+        logger.info(f"No changes detected in image pair: {a_image_path} and {b_image_path}. Saving empty mask.")  
+        count += 1
+    print(count)
 
     logger.info("✅ 图像推理完成！")

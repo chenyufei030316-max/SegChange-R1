@@ -14,6 +14,7 @@ from engines import TrainingEngine
 
 def main():
     cfg = get_args_config()
+    print(cfg)
     # 创建训练引擎并运行
     trainer = TrainingEngine(cfg)
     trainer.run()

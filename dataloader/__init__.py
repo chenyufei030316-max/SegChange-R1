@@ -7,8 +7,11 @@ from torch.utils.data import DataLoader
 import logging
 
 def build_dataset(cfg):
+    # print(cfg)
     train_set, val_set = loading_data(cfg)
 
+    # print(train_set.train)
+    # print(len(train_set))
     sampler_train = torch.utils.data.RandomSampler(train_set)  # Random sampling
     sampler_val = torch.utils.data.SequentialSampler(val_set)  # Sequential sampling
     batch_sampler_train = torch.utils.data.BatchSampler(

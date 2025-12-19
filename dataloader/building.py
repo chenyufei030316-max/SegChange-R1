@@ -38,6 +38,7 @@ class Building(Dataset):
             self.b_dir = os.path.join(self.data_dir, 'B')
             self.labels_dir = os.path.join(self.data_dir, 'label')
             self.prompts_path = os.path.join(self.data_dir, 'prompts.txt')
+            # print(self.a_dir, self.b_dir, self.labels_dir)
         elif self.data_format == "custom":
             self.data_dir = self.data_path
             self.a_dir = os.path.join(self.data_path, 'A')
@@ -57,13 +58,27 @@ class Building(Dataset):
                 filename for filename in os.listdir(self.a_dir)
                 if os.path.splitext(filename)[1].lower() in SUPPORTED_IMAGE_FORMATS
             ]
+            # print(a_img_paths)
+            # print(a_img_paths)
             for filename in a_img_paths:
                 a_img_path = os.path.join(self.a_dir, filename)
-                b_img_path = os.path.join(self.b_dir, filename)
-                label_path = os.path.join(self.labels_dir, filename)
+                b_img_path = os.path.join(self.b_dir, filename) if os.path.isfile(os.path.join(self.b_dir, filename)) else os.path.join(self.b_dir, filename.replace('2021', '2024'))
+                # label_path = os.path.join(self.labels_dir, os.path.splitext(filename)[0] + '_change_mask.png')
+                after_id = filename.split('id')[1]
+                img_id = after_id.split('_')[0]
+                label_path = os.path.join(self.labels_dir, os.path.splitext(filename)[0] + '_change_mask.png')
+                # print(os.path.isfile(a_img_path) and os.path.isfile(b_img_path) and os.path.isfile(label_path))
+                
+                # print(a_img_path, b_img_path, label_path)
+                # print(os.path.isfile(label_path))
                 if os.path.isfile(a_img_path) and os.path.isfile(b_img_path) and os.path.isfile(label_path):
                     self.img_map[a_img_path] = (b_img_path, label_path)
+                    # print(self.img_map[a_img_path])
                     self.img_list.append(a_img_path)
+                else:
+                    print(a_img_path, b_img_path, label_path)
+                    
+            # self.img_list
         elif self.data_format == "custom":
             # 从对应的txt文件中读取图像路径
             if self.test:
@@ -87,12 +102,15 @@ class Building(Dataset):
                             self.img_map[a_img_path] = (b_img_path, label_path)
                             self.img_list.append(a_img_path)
 
+        # print(self.a_dir, self.b_dir, self.labels_dir)
+        
         # 读取 prompts.txt 文件
         self._load_prompts()
 
         self.img_list = sort_filenames_numerically(self.img_list)
 
         self.nSamples = len(self.img_list)
+        print(self.nSamples)
         self.transform = build_transforms(**kwargs)
 
         self.a_transform = transforms.Compose([
@@ -135,6 +153,8 @@ class Building(Dataset):
         label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)
         label = (label > 0).astype(np.uint8)
 
+        #(a_img.shape, b_img.shape, label.shape)
+        
         # Step 2: 读取 prompt
         prompt = self.prompts.get(filename, "")
 

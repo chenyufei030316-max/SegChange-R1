@@ -204,6 +204,8 @@ class TrainingEngine:
     def _train_one_epoch(self, epoch):
         """训练一个epoch"""
         t1 = time.time()
+        # print(self.cfg, self.model)
+        # print(self.dataloader_train)
         stat = train(self.cfg, self.model, self.criterion,
                      self.dataloader_train, self.optimizer, self.device, epoch)
         time.sleep(1)  # 避免tensorboard卡顿
