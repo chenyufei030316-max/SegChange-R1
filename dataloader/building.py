@@ -64,7 +64,7 @@ class Building(Dataset):
                 a_img_path = os.path.join(self.a_dir, filename)
                 b_img_path = os.path.join(self.b_dir, filename) if os.path.isfile(os.path.join(self.b_dir, filename)) else os.path.join(self.b_dir, filename.replace('2021', '2024'))
                 # label_path = os.path.join(self.labels_dir, os.path.splitext(filename)[0] + '_change_mask.png')
-                after_id = filename.split('id')[1]
+                after_id = filename.split('id')[1] if "id" in filename else filename
                 img_id = after_id.split('_')[0]
                 label_path = os.path.join(self.labels_dir, os.path.splitext(filename)[0] + '_change_mask.png')
                 # print(os.path.isfile(a_img_path) and os.path.isfile(b_img_path) and os.path.isfile(label_path))

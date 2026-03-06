@@ -1,31 +1,25 @@
 # -*- coding: utf-8 -*-
-"""
-@Project : SegChange-R1
-@FileName: infer.py
-@Time    : 2025/4/24 下午5:24
-@Author  : ZhouFei
-@Email   : zhoufei.net@gmail.com
-@Desc    : 测试建筑物变化检测模型
-@Usage   :
-"""
+import torch
 from engines import predict
 from utils import get_args_config
-
+# 必须导入 Config 类以便将其加入安全名单
+from utils.misc import Config 
 
 def main():
+    # --- [核心修复] 允许加载自定义 Config 类 ---
+    # PyTorch 2.6+ 默认 weights_only=True，需要手动放行安全类
+    if hasattr(torch.serialization, 'add_safe_globals'):
+        torch.serialization.add_safe_globals([Config])
+    
     cfg = get_args_config()
-    # predict(cfg)
-    # names = ['BL1_5', 'BL2_5', 'BL3_5', 'BL4_5', 'BL5_5', 'HC_5', 'ZK_5']
+    
+    # 你可以保留原本的逻辑
     names = ['change']
-    # 遍历名称列表，动态生成 input_dir 并调用 predict
     for name in names:
         cfg.infer.name = name
-        # cfg.infer.input_dir = f'./data/{name}/test' 
-        cfg.infer.input_dir = '/hdd10Tb/zhangyi/SegChange-R1/data/change/test'
-        # cfg.infer.input_dir = f'./data/{name}/FP_test'  # 修改 input_dir 路径
-        print(cfg)
+        cfg.infer.input_dir = '/hdd10Ta/chenyf/infer-TP'
+        print(f"Starting inference for: {name}")
         predict(cfg)
-
 
 if __name__ == "__main__":
     main()

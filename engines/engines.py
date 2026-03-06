@@ -2,14 +2,9 @@
 """
 @Project : SegChange-R1
 @FileName: engines.py
-@Time    : 2025/4/21 上午9:48
-@Author  : ZhouFei
-@Email   : zhoufei.net@gmail.com
-@Desc    : 
-@Usage   :
+@Desc    : 适配 RTS 物理一致性约束的训练与评估引擎
 """
 import os
-
 import cv2
 import numpy as np
 import torch
@@ -28,36 +23,61 @@ def train(cfg, model, criterion, dataloader, optimizer, device, epoch):
     total_correct = 0
     total_pixels = 0
 
+    # 动态调整物理权重：前 15 个 epoch 先学习基础语义，之后开启物理一致性约束
+    if epoch < 15:
+        criterion.w_cons = 0.0
+    else:
+        # 确保 TotalLoss 类中有 w_cons 属性，并从配置中读取
+        criterion.w_cons = getattr(cfg.loss, 'weight_rts_cons', 0.5)
+
     with tqdm(dataloader, desc=f'Epoch {epoch} [Training]') as pbar:
         for images_a, images_b, prompt, labels in pbar:
             images_a = images_a.to(device)
             images_b = images_b.to(device)
-            embs = build_embs(prompts=prompt, text_encoder_name=cfg.model.text_encoder_name,
-                              freeze_text_encoder=cfg.model.freeze_text_encoder, device=device, batch_size=cfg.training.batch_size)
             labels = labels.to(device)
+            
+            # 1. 构建 LLM 语义嵌入 [cite: 8, 28, 97]
+            embs = build_embs(prompts=prompt, 
+                              text_encoder_name=cfg.model.text_encoder_name,
+                              freeze_text_encoder=cfg.model.freeze_text_encoder, 
+                              device=device, 
+                              batch_size=images_a.size(0))
 
             optimizer.zero_grad()
-            # print(images_a.shape, images_b.shape, embs.shape)
+            
+            # 2. 前向传播：获取 (最终变化图, T1时刻预测, T2时刻预测)
+            # 这利用了修改后 ChangeModel 的三输出逻辑
             outputs = model(images_a, images_b, embs)
-            loss = criterion(outputs, labels)
+            
+            if isinstance(outputs, tuple) and len(outputs) == 3:
+                mask_change, mask_t1, mask_t2 = outputs
+                # 3. 计算包含物理一致性约束的 TotalLoss [cite: 8, 153]
+                loss = criterion(mask_change, labels, mask_t1, mask_t2)
+                final_output = mask_change # 用于后续计算指标
+            else:
+                loss = criterion(outputs, labels)
+                final_output = outputs
+
             loss.backward()
             optimizer.step()
 
             total_loss += loss.item() * images_a.size(0)
             total_samples += images_a.size(0)
 
-            # Calculate accuracy
+            # 4. 计算指标 (OA)
             if cfg.model.num_classes == 1:
-                preds = (torch.sigmoid(outputs) > cfg.training.threshold).float().squeeze(1)
+                preds = (torch.sigmoid(final_output) > cfg.training.threshold).float().squeeze(1)
             else:
-                preds = torch.argmax(outputs, dim=1)
+                preds = torch.argmax(final_output, dim=1)
+                
             correct = (preds == labels).sum().item()
             total_correct += correct
             total_pixels += labels.numel()
 
             pbar.set_postfix({
                 'loss': total_loss / total_samples,
-                'oa': total_correct / total_pixels
+                'oa': total_correct / total_pixels,
+                'w_cons': criterion.w_cons
             })
 
     epoch_loss = total_loss / total_samples
@@ -67,6 +87,7 @@ def train(cfg, model, criterion, dataloader, optimizer, device, epoch):
 
 
 def evaluate(cfg, model, criterion, postprocessor, dataloader, device, epoch):
+    """验证阶段：只需关注最终的变化检测结果"""
     model.eval()
     total_loss = 0.0
     total_samples = 0
@@ -77,50 +98,43 @@ def evaluate(cfg, model, criterion, postprocessor, dataloader, device, epoch):
         for images_a, images_b, prompt, labels in pbar:
             images_a = images_a.to(device)
             images_b = images_b.to(device)
-            embs = build_embs(prompts=prompt, text_encoder_name=cfg.model.text_encoder_name,
-                              freeze_text_encoder=cfg.model.freeze_text_encoder, device=device)
             labels = labels.to(device)
+            
+            embs = build_embs(prompts=prompt, 
+                              text_encoder_name=cfg.model.text_encoder_name,
+                              freeze_text_encoder=cfg.model.freeze_text_encoder, 
+                              device=device)
 
+            # 验证模式下模型只返回 mask_change
             outputs = model(images_a, images_b, embs)
+            
+            # 验证阶段计算基础 Loss
             loss = criterion(outputs, labels)
             total_loss += loss.item() * images_a.size(0)
             total_samples += images_a.size(0)
 
-            # Store predictions and labels
             if cfg.model.num_classes == 1:
                 preds = (torch.sigmoid(outputs) > cfg.training.threshold).float().squeeze(1).cpu().numpy()
             else:
                 preds = torch.argmax(outputs, dim=1).cpu().numpy()
-            # TODO: 后处理PostProcessor
-            # post_preds, _ = postprocessor(preds)
 
-            labels = labels.cpu().numpy()
+            labels_np = labels.cpu().numpy()
             all_preds.extend(preds.flatten())
-            all_labels.extend(labels.flatten())
+            all_labels.extend(labels_np.flatten())
 
-            pbar.set_postfix({
-                'loss': total_loss / total_samples
-            })
+            pbar.set_postfix({'loss': total_loss / total_samples})
 
-    # Calculate evaluation metrics
     val_loss = total_loss / total_samples
 
-    if cfg.model.num_classes == 1:
-        # 二分类指标
-        precision = precision_score(all_labels, all_preds, zero_division=0)
-        recall = recall_score(all_labels, all_preds, zero_division=0)
-        f1 = f1_score(all_labels, all_preds, zero_division=0)
-        iou = jaccard_score(all_labels, all_preds)
-        oa = accuracy_score(all_labels, all_preds)
-    else:
-        # 多分类指标（使用macro平均）
-        precision = precision_score(all_labels, all_preds, average='macro', zero_division=0)
-        recall = recall_score(all_labels, all_preds, average='macro', zero_division=0)
-        f1 = f1_score(all_labels, all_preds, average='macro', zero_division=0)
-        iou = jaccard_score(all_labels, all_preds, average='macro')
-        oa = accuracy_score(all_labels, all_preds)
+    # 计算各项地学评估指标 [cite: 194]
+    avg_type = 'binary' if cfg.model.num_classes == 1 else 'macro'
+    precision = precision_score(all_labels, all_preds, average=avg_type, zero_division=0)
+    recall = recall_score(all_labels, all_preds, average=avg_type, zero_division=0)
+    f1 = f1_score(all_labels, all_preds, average=avg_type, zero_division=0)
+    iou = jaccard_score(all_labels, all_preds, average=avg_type)
+    oa = accuracy_score(all_labels, all_preds)
 
-    metrics = {
+    return {
         'loss': val_loss,
         'precision': precision,
         'recall': recall,
@@ -129,9 +143,8 @@ def evaluate(cfg, model, criterion, postprocessor, dataloader, device, epoch):
         'oa': oa
     }
 
-    return metrics
-
-
+# 后续辅助函数 (evaluate_model, reverse_normalize, overlay_mask_on_image, create_comparison_image)
+# 保持原样即可，这些函数主要用于推理展示和结果保存
 def evaluate_model(cfg, model, postprocessor, dataloader, device, output_dir):
     model.eval()
     all_preds = []
@@ -360,4 +373,3 @@ def create_comparison_image(image_a, image_b, target_mask, pred_mask, num_classe
     comparison_img.paste(pred_img.convert('RGB'), (image_a_pil.width * 3, 0))
 
     return comparison_img
-

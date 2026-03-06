@@ -10,7 +10,8 @@
 """
 from utils import get_args_config
 from engines import TrainingEngine
-
+import torch
+torch.cuda.empty_cache() # 强制释放当前不使用的显存块
 
 def main():
     cfg = get_args_config()
