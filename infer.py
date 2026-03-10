@@ -13,11 +13,10 @@ def main():
     
     cfg = get_args_config()
     
-    # 你可以保留原本的逻辑
     names = ['change']
     for name in names:
         cfg.infer.name = name
-        cfg.infer.input_dir = '/hdd10Ta/chenyf/infer-TP'
+        cfg.infer.input_dir = '/data/change/infer'
         print(f"Starting inference for: {name}")
         predict(cfg)
 

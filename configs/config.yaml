@@ -1,8 +1,8 @@
 name: 'train-SR'
 device: 'cuda:0'
 seed: 42
-output_dir: /home/chenyf/tmpData/SegChange-R1/SR-train
-num_workers: 8
+output_dir: ./work_dirs
+num_workers: 12
 resume: null  # 如果存在，则恢复训练
 # prompt: 'Buildings with changes, Mound changes.'
 prompt: 'Retrogressive thaw slump changes.'
@@ -22,16 +22,7 @@ data:
     erase_ratio: [0, 0]                           # 随机擦除大小
     blur_sigma: 0.3                               # 高斯模糊
     clahe: 0.5                                    # 直方图均衡化
-  #transforms:
-   # apply_prob: 0.8                               # 从 0.5 提升到 0.8（让更多图参与扩增）
-    #color_jitter: 0.3                             # 稍微加大色彩抖动，模拟不同光照
-    #rotation_degree: 90                           # 从 15 改为 90（遥感影像旋转 90/180/270 度非常有效）
-    #gamma_range: [0.7, 1.3]                       # 拓宽亮度矫正范围
-    #affine_degree: 15                             # 从 0 提升到 15（增加仿射变换，模拟透视形变）
-    #erase_prob: 0.2                               # 开启随机擦除（强迫模型关注滑塌的局部特征）
-    #erase_ratio: [0.1, 0.2]                       # 擦除面积占比
-    #blur_sigma: 0.5                               # 略微增加模糊，适应低质量影像
-    #clahe: 0.5
+
 
 model:
   num_classes: 1
@@ -48,23 +39,15 @@ model:
   desc_embs: null                                 # 文本描述向量地址 "./weights/embeddings.pt"
   freeze_text_encoder: True                       # 冻结模型参数
 
-#loss:
- # weight_ce: 1.0                                  # 分类任务基础损失
-  #weight_dice: 3                                # 提升边界分割精度
-  #weight_focal: 1.5                               # 缓解类别不平衡
-  #alpha: 0.5                                      # 平衡正负样本的比例
-  #gamma: 2.0                                      # 聚焦参数，控制简单样本的下降速率
-  #weight_bcl: 0.3                                 # 增强特征区分度
 
 loss:
-  weight_ce: 1.0
+  weight_ce: 1.0         # 分类任务基础损失
   weight_dice: 3.0       # 建议保持高权重，以抓取滑塌边缘的精细结构 [cite: 172]
-  weight_focal: 1.5
-  weight_bcl: 0.3
-  # 新增 RTS 物理一致性权重
-  weight_rts_cons: 0.5  # 建议范围 0.1 - 1.0
-  alpha: 0.5
-  gamma: 2.0
+  weight_focal: 1.5      # 缓解类别不平衡
+  weight_bcl: 0.3        # 新增 RTS 物理一致性权重
+  weight_rts_cons: 0.5   # 建议范围 0.1 - 1.0
+  alpha: 0.5             # 平衡正负样本的比例
+  gamma: 2.0             # 聚焦参数，控制简单样本的下降速
 
 logger:
   log_name: 'Seg_log'
@@ -72,7 +55,7 @@ logger:
 
 training:
   start_epoch: 1
-  epochs: 120
+  epochs: 200
   scheduler: 'step'  # [step, plateau]
   lr: 0.0002
   lr_backbone: 0.00001
@@ -82,26 +65,25 @@ training:
   eval_freq: 1
   start_eval: 1
   threshold: 0.6
-  patience: 20
 
 test:
-  img_dirs: '/hdd10Ta/chenyf/infer-FP'
+  img_dirs: './data/change/test'
   batch_size: 1
   threshold: 0.5
   postprocess: False  # 控制是否应用后处理
   device: 'cuda:0'
   name: "test"
-  weights_dir: /home/chenyf/tmpData/SegChange-R1/mix/train-mix_5/checkpoints/best_iou.pth
+  weights_dir: '.work_dirs/train-SR/checkpoints/best_iou.pth'
   save_dir: "./work_dirs"
   show: True
   show_overlay: False
 
 infer:
   name: 'BL2_5'
-  input_dir: '/hdd10Ta/chenyf/infer-TP'
+  input_dir: '/data/change/infer'
   chunk_size: 25600  # 25600
   postprocess: False  # 控制是否应用后处理
-  weights_dir: /home/chenyf/tmpData/SegChange-R1/SR-train/train-SR_2/checkpoints/best_iou.pth
+  weights_dir: '.work_dirs/train-SR/checkpoints/best_iou.pth'
   output_dir: './outputs/SR'
   threshold: 0.6
   device: 'cuda:0'

@@ -2,9 +2,14 @@
 """
 @Project : SegChange-R1
 @FileName: engines.py
-@Desc    : 适配 RTS 物理一致性约束的训练与评估引擎
+@Time    : 2025/4/21 上午9:48
+@Author  : ZhouFei
+@Email   : zhoufei.net@gmail.com
+@Desc    : 
+@Usage   :
 """
 import os
+
 import cv2
 import numpy as np
 import torch
@@ -87,7 +92,6 @@ def train(cfg, model, criterion, dataloader, optimizer, device, epoch):
 
 
 def evaluate(cfg, model, criterion, postprocessor, dataloader, device, epoch):
-    """验证阶段：只需关注最终的变化检测结果"""
     model.eval()
     total_loss = 0.0
     total_samples = 0
@@ -143,8 +147,7 @@ def evaluate(cfg, model, criterion, postprocessor, dataloader, device, epoch):
         'oa': oa
     }
 
-# 后续辅助函数 (evaluate_model, reverse_normalize, overlay_mask_on_image, create_comparison_image)
-# 保持原样即可，这些函数主要用于推理展示和结果保存
+
 def evaluate_model(cfg, model, postprocessor, dataloader, device, output_dir):
     model.eval()
     all_preds = []
