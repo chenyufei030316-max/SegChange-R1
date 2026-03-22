@@ -1,11 +1,11 @@
-name: 'train-SR'
+name: 'train-SR-LLM-Enhanced'
 device: 'cuda:0'
 seed: 42
 output_dir: ./work_dirs
 num_workers: 12
 resume: null  # 如果存在，则恢复训练
 # prompt: 'Buildings with changes, Mound changes.'
-prompt: 'Retrogressive thaw slump changes.'
+prompt: 'Analyze the multi-temporal Arctic remote sensing images, infer the retrogressive thaw slump evolution types, detect the precise slump change boundaries and extract the spatial deformation features.'
 onnx_weights: './examples/ONNXRuntime/weights'
 
 data:
@@ -17,9 +17,9 @@ data:
     color_jitter: 0.2                             # 颜色抖动
     rotation_degree: 90                           # 旋转角度
     gamma_range: [0.8, 1.2]                       # Gamma矫正
-    affine_degree: 0                              # 仿射变换
-    erase_prob: 0                                 # 随机擦除
-    erase_ratio: [0, 0]                           # 随机擦除大小
+    affine_degree: 15                              # 仿射变换
+    erase_prob: 0.3                                 # 随机擦除
+    erase_ratio: [0.02, 0.15]                           # 随机擦除大小
     blur_sigma: 0.3                               # 高斯模糊
     clahe: 0.5                                    # 直方图均衡化
 
@@ -35,19 +35,19 @@ model:
   use_token_connector: False                      # 是否降低 token 维度
   pretrained: True                                # 是否使用预训练的模型参数
   img_size: 256
-  text_encoder_name: "bert-base-uncased"          # [microsoft/phi-1_5, bert-base-uncased]
+  text_encoder_name: "microsoft/phi-1_5"          # [microsoft/phi-1_5, bert-base-uncased]
   desc_embs: null                                 # 文本描述向量地址 "./weights/embeddings.pt"
-  freeze_text_encoder: True                       # 冻结模型参数
-
+  freeze_text_encoder: False                      # 冻结模型参数
+  use_rts_constraint: False                        # 开启RTS物理约束
 
 loss:
-  weight_ce: 1.0         # 分类任务基础损失
-  weight_dice: 3.0       # 建议保持高权重，以抓取滑塌边缘的精细结构 [cite: 172]
-  weight_focal: 1.5      # 缓解类别不平衡
-  weight_bcl: 0.3        # 新增 RTS 物理一致性权重
-  weight_rts_cons: 0.5   # 建议范围 0.1 - 1.0
-  alpha: 0.5             # 平衡正负样本的比例
-  gamma: 2.0             # 聚焦参数，控制简单样本的下降速
+  weight_ce: 1.0  # 分类损失权重
+  weight_dice: 1.5  # 边缘分割损失权重
+  weight_focal: 1.5  # 类别不平衡损失权重
+  alpha: 0.6  # Focal损失正负样本平衡系数
+  gamma: 2.0  # Focal损失聚焦参数
+  weight_bcl: 0.3  # 特征区分损失权重
+  weight_rts_cons: 0  # RTS物理一致性损失权重（新增）
 
 logger:
   log_name: 'Seg_log'
@@ -57,14 +57,14 @@ training:
   start_epoch: 1
   epochs: 200
   scheduler: 'step'  # [step, plateau]
-  lr: 0.0002
+  lr: 0.0001
   lr_backbone: 0.00001
-  lr_drop: 50
+  lr_drop: 80
   weight_decay: 0.0001
   batch_size: 4
   eval_freq: 1
   start_eval: 1
-  threshold: 0.6
+  threshold: 0.5
 
 test:
   img_dirs: './data/change/test'
@@ -80,10 +80,10 @@ test:
 
 infer:
   name: 'BL2_5'
-  input_dir: '/data/change/infer'
+  input_dir: '/hdd10Ta/chenyf/Valid/SR-TP'
   chunk_size: 25600  # 25600
   postprocess: False  # 控制是否应用后处理
-  weights_dir: '.work_dirs/train-SR/checkpoints/best_iou.pth'
-  output_dir: './outputs/SR'
-  threshold: 0.6
+  weights_dir: '/hdd10Ta/chenyf/SegChange-R1/work_dirs/train-SR_3/checkpoints/best_iou.pth'
+  output_dir: './outputs/iou-0.43/valid'
+  threshold: 0.5
   device: 'cuda:0'
