@@ -32,7 +32,9 @@ def train(cfg, model, criterion, dataloader, optimizer, device, epoch):
         for images_a, images_b, prompt, labels in pbar:
             images_a = images_a.to(device)
             images_b = images_b.to(device)
-            embs = build_embs(prompts=prompt, text_encoder_name=cfg.model.text_encoder_name,
+            # 如果 dataloader 的 prompt 为空，使用 cfg.prompt
+            effective_prompt = [cfg.prompt if p == '' else p for p in prompt]
+            embs = build_embs(prompts=effective_prompt, text_encoder_name=cfg.model.text_encoder_name,
                               freeze_text_encoder=cfg.model.freeze_text_encoder, device=device, batch_size=cfg.training.batch_size)
             labels = labels.to(device)
 
@@ -76,7 +78,8 @@ def evaluate(cfg, model, criterion, postprocessor, dataloader, device, epoch):
         for images_a, images_b, prompt, labels in pbar:
             images_a = images_a.to(device)
             images_b = images_b.to(device)
-            embs = build_embs(prompts=prompt, text_encoder_name=cfg.model.text_encoder_name,
+            effective_prompt = [cfg.prompt if p == '' else p for p in prompt]
+            embs = build_embs(prompts=effective_prompt, text_encoder_name=cfg.model.text_encoder_name,
                               freeze_text_encoder=cfg.model.freeze_text_encoder, device=device)
             labels = labels.to(device)
 

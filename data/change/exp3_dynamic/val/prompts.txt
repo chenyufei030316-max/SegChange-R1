@@ -1,0 +1,52 @@
+id88002d8761fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id8801804209fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id8801814909fffff.png  Retrogressive thaw slump changes.
+id880181494dfffff.png  Retrogressive thaw slump changes.
+id880181496bfffff.png  Retrogressive thaw slump changes.
+id8801814b29fffff.png  Retrogressive thaw slump changes.
+id8801838619fffff.png  Retrogressive thaw slump changes.
+id88018e5293fffff.png  Retrogressive thaw slumps are distributed across multiple portions of a barren, ice-rich landscape, each exhibiting irregular or arcuate light-colored scars with pronounced headwall retreat and lateral expansion into surrounding terrain.
+id88018e5769fffff.png  Retrogressive thaw slumps are scattered across the lower portion of a barren slope, each exhibiting irregular light-colored exposed surfaces with pronounced headwall retreat and lateral expansion of scars into adjacent ice-rich deposits.
+id88018ecaddfffff.png  Retrogressive thaw slumps are distributed along a drainage channel on a barren slope, exhibiting interconnected light-colored scars with pronounced headwall retreat and lateral expansion into surrounding ice-rich deposits.
+id88020d1a3dfffff.png  A retrogressive thaw slump is located on a barren, ice-rich slope intersected by snow patches and drainage features, exhibiting an irregular light-colored exposed surface with pronounced headwall retreat and lateral expansion into surrounding terrain.
+id88022838c3fffff.png  A retrogressive thaw slump is located on a barren, ice-rich slope intersected by drainage channels, exhibiting an irregular light-colored scar with pronounced headwall retreat and lateral expansion into adjacent terrain.
+id88022d2587fffff.png  retrogressive thaw slump is located along a coastal shoreline on a barren slope, exhibiting a light-colored exposed surface with pronounced headwall retreat and downslope extension toward the water body.
+id88022d3a87fffff.png  A retrogressive thaw slump is located in the lower-left portion of a barren, patterned ground landscape, exhibiting a small, irregular light-colored scar with pronounced headwall retreat and lateral expansion into adjacent terrain.
+id88022d6347fffff.png  Retrogressive thaw slumps are distributed in the lower and right portions of a barren, patterned ground landscape, each exhibiting irregular light-colored exposed surfaces with pronounced headwall retreat and lateral expansion into adjacent ice-rich terrain.
+id88022d66a3fffff.png  A retrogressive thaw slump is located in the lower portion of a barren slope near a drainage feature, exhibiting a small, irregular light-colored exposed surface with pronounced headwall retreat and lateral expansion.
+id8802898633fffff.png  Retrogressive thaw slump changes.
+id880289c52dfffff.png  Retrogressive thaw slump changes.
+id88028b8c49fffff.png  A retrogressive thaw slump is located along the shoreline of a turquoise-colored lake on a barren slope, exhibiting a light-colored exposed surface with pronounced headwall retreat and downslope extension toward the water body.
+id8802f2561dfffff.png  Retrogressive thaw slumps are distributed across multiple portions of a barren, ice-rich landscape, each exhibiting elongated or irregular light-colored scars with pronounced headwall retreat and lateral expansion into surrounding terrain.
+id8802f2563bfffff.png  Retrogressive thaw slumps are distributed in the upper and lower portions of a barren, ice-rich slope near a water body, exhibiting light-colored exposed surfaces with pronounced headwall retreat and lateral expansion of scars into adjacent terrain.
+id8802f26b01fffff.png  A retrogressive thaw slump is located on a barren slope, exhibiting an elongated light-colored scar with pronounced headwall retreat and downslope extension of the exposed surface into adjacent terrain.
+id8802f2c867fffff.png  Retrogressive thaw slumps are distributed across multiple portions of an ice-rich landscape, exhibiting light-colored exposed surfaces with pronounced headwall retreat and lateral expansion of scars into surrounding terrain.
+id8803467ab9fffff.png  Retrogressive thaw slump changes.
+id8804a96129fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id8804d4d2c5fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id8805100495fffff.png  Retrogressive thaw slump changes.
+id88051004b9fffff.png  Retrogressive thaw slump changes.
+id8805100625fffff.png  Retrogressive thaw slump changes.
+id880532b2e7fffff.png  Retrogressive thaw slump changes.
+id8805360351fffff.png  Retrogressive thaw slump changes.
+id88059c298bfffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id880884881bfffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id8808d21359fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id880a48b081fffff.png  A single retrogressive thaw slump is active in the upper-right quadrant of a vegetated slope, exhibiting distinct headwall retreat into the upland tundra.
+id880a6b2e47fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id880b486e9bfffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id880b4c3849fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id880b694c69fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id880b694f09fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id880b6b91ebfffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id880d511749fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id880d687a1dfffff.png  Retrogressive thaw slumps are distributed in the lower-right portion of a vegetated slope, exhibiting light-colored exposed surfaces with pronounced headwall retreat and lateral expansion of scars into adjacent terrain.
+id880d68b919fffff.png  Retrogressive thaw slumps are distributed in the upper and lower-left portions of a vegetated slope, exhibiting elongated light-colored scars with pronounced headwall retreat and lateral expansion into adjacent terrain.
+id880d6e0501fffff.png  A retrogressive thaw slump is located on the right bank of a braided river channel, exhibiting a light-colored exposed surface with pronounced headwall retreat and lateral expansion of the scar into adjacent floodplain terrain.
+id880d6e3165fffff.png  Retrogressive thaw slumps are distributed along the lower-left bank of a meandering river, exhibiting light-colored exposed surfaces with pronounced headwall retreat and lateral expansion of scars into adjacent floodplain terrain.
+id880d83c2d1fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id880d9c9b65fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id880fb16729fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id8810e9a295fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id8812a26c37fffff.png  No retrogressive thaw slumps / No change in the retrogressive thaw slumps area.
+id8814616f21fffff.png  Retrogressive thaw slump changes.

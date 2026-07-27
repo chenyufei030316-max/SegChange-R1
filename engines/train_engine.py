@@ -174,7 +174,11 @@ class TrainingEngine:
         self.results_df = pd.DataFrame(columns=[
             'epoch', 'train_loss', 'train_oa',
             'val_loss', 'val_precision', 'val_recall', 'val_f1', 'val_iou', 'val_oa'
-        ])
+        ]).astype({
+            'epoch': 'float64', 'train_loss': 'float64', 'train_oa': 'float64',
+            'val_loss': 'float64', 'val_precision': 'float64', 'val_recall': 'float64',
+            'val_f1': 'float64', 'val_iou': 'float64', 'val_oa': 'float64'
+        })
 
         # 创建检查点目录
         self.ckpt_dir = os.path.join(str(self.output_dir), 'checkpoints')
@@ -222,12 +226,12 @@ class TrainingEngine:
             'epoch': epoch,
             'train_loss': stat['loss'],
             'train_oa': stat['oa'],
-            'val_loss': '',
-            'val_precision': '',
-            'val_recall': '',
-            'val_f1': '',
-            'val_iou': '',
-            'val_oa': ''
+            'val_loss': float('nan'),
+            'val_precision': float('nan'),
+            'val_recall': float('nan'),
+            'val_f1': float('nan'),
+            'val_iou': float('nan'),
+            'val_oa': float('nan')
         }
 
         return stat
@@ -354,8 +358,9 @@ class TrainingEngine:
             if epoch % self.cfg.training.eval_freq == 0 and epoch >= self.cfg.training.start_eval:
                 eval_metrics = self._evaluate_one_epoch(epoch)
 
-                # 根据验证损失调整学习率（如果使用plateau调度器）
-                self._adjust_learning_rate(eval_metrics)
+                # 根据验证损失调整学习率（仅plateau调度器）
+                if self.cfg.training.scheduler == 'plateau':
+                    self._adjust_learning_rate(eval_metrics)
 
                 # 保存最佳模型
                 self._save_best_models(epoch, train_stat, eval_metrics)

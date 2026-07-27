@@ -79,16 +79,21 @@ class DProjector(nn.Module):
         vis_feat:  [B, C, H, W]
         """
         B, C, H, W = vis_feat.shape
-        # 1) average desc_embs over T
-        desc_avg = desc_embs.mean(dim=1)  # [B, L]
-        desc_vis = self.lang2vis(desc_avg)  # [B, C]
 
-        # 2) cross-attend to every pixel
+        # 1) 把所有 token 投影到视觉空间，保留序列信息
+        desc_vis = self.lang2vis(desc_embs)  # [B, T, C]
+        desc_vis = desc_vis.permute(1, 0, 2)  # [T, B, C]
+
+        # 2) 用视觉特征作为 query，文本序列作为 key/value
         v = vis_feat.flatten(2).permute(2, 0, 1)  # [N, B, C]
-        q = desc_vis.unsqueeze(0)  # [1, B, C]
-        attn_out, _ = self.cross_attn(q, v, v)  # [1, B, C]
+        # 先用文本序列均值初始化 query
+        q = desc_vis.mean(0, keepdim=True)  # [1, B, C]
+        # 文本 token 作为 key/value，让 query 从文本序列中提取信息
+        attn_out, _ = self.cross_attn(q, desc_vis, desc_vis)  # [1, B, C]
+        # 再用提取到的文本特征 attend 到视觉特征
+        attn_out2, _ = self.cross_attn(attn_out, v, v)  # [1, B, C]
         # residual + linear
-        q2 = self.lin(attn_out + q).squeeze(0)  # [B, C]
+        q2 = self.lin(attn_out2 + attn_out).squeeze(0)  # [B, C]
         return q2  # this is the single query vector per image
 
 

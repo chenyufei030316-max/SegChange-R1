@@ -22,11 +22,12 @@ from utils import SUPPORTED_IMAGE_FORMATS
 
 
 class Building(Dataset):
-    def __init__(self, data_root, train=False, test=False, data_format="default", **kwargs):
+    def __init__(self, data_root, train=False, test=False, data_format="default", img_size=256, **kwargs):
         self.data_path = data_root
         self.train = train
         self.test = test
         self.data_format = data_format  # 控制数据集格式
+        self.img_size = img_size  # Swin等backbone要求固定输入分辨率，读图后统一resize到这个尺寸
 
         # 根据数据集格式构建数据目录
         if self.data_format == "default":
@@ -60,7 +61,13 @@ class Building(Dataset):
             for filename in a_img_paths:
                 a_img_path = os.path.join(self.a_dir, filename)
                 b_img_path = os.path.join(self.b_dir, filename)
+                # 兼容两种label命名习惯：跟A/B同名，或者 <stem>_change_mask.png
                 label_path = os.path.join(self.labels_dir, filename)
+                if not os.path.isfile(label_path):
+                    stem = os.path.splitext(filename)[0]
+                    alt_label_path = os.path.join(self.labels_dir, f"{stem}_change_mask.png")
+                    if os.path.isfile(alt_label_path):
+                        label_path = alt_label_path
                 if os.path.isfile(a_img_path) and os.path.isfile(b_img_path) and os.path.isfile(label_path):
                     self.img_map[a_img_path] = (b_img_path, label_path)
                     self.img_list.append(a_img_path)
@@ -127,12 +134,17 @@ class Building(Dataset):
         b_img_path, label_path = self.img_map[a_img_path]
         filename = os.path.basename(a_img_path)
 
-        # Step 1: 使用 OpenCV 读取图像，并转为 RGB 格式
+        # Step 1: 使用 OpenCV 读取图像，并转为 RGB 格式；统一resize到 self.img_size
+        # （原图尺寸不一致时，Swin backbone的固定窗口划分要求输入分辨率必须一致；
+        # 对已经是目标尺寸的数据这一步是no-op）
         a_img = cv2.imread(a_img_path)
         a_img = cv2.cvtColor(a_img, cv2.COLOR_BGR2RGB)
+        a_img = cv2.resize(a_img, (self.img_size, self.img_size), interpolation=cv2.INTER_LINEAR)
         b_img = cv2.imread(b_img_path)
         b_img = cv2.cvtColor(b_img, cv2.COLOR_BGR2RGB)
+        b_img = cv2.resize(b_img, (self.img_size, self.img_size), interpolation=cv2.INTER_LINEAR)
         label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)
+        label = cv2.resize(label, (self.img_size, self.img_size), interpolation=cv2.INTER_NEAREST)
         label = (label > 0).astype(np.uint8)
 
         # Step 2: 读取 prompt

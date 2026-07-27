@@ -123,6 +123,21 @@ class TextEncoderBert(nn.Module):
         return self
 
 
+_text_encoder_cache = {}
+_prompt_embs_cache = {}
+
+def get_text_encoder(text_encoder_name, device, freeze_text_encoder):
+    global _text_encoder_cache
+    key = (text_encoder_name, device)
+    if key not in _text_encoder_cache:
+        if text_encoder_name == "microsoft/phi-1_5":
+            _text_encoder_cache[key] = TextEncoderLLM(model_name=text_encoder_name, device=device, freeze_text_encoder=freeze_text_encoder)
+        elif text_encoder_name == "bert-base-uncased":
+            _text_encoder_cache[key] = TextEncoderBert(model_name=text_encoder_name, device=device, freeze_text_encoder=freeze_text_encoder)
+        else:
+            raise NotImplementedError(f"Unsupported text encoder name: {text_encoder_name}")
+    return _text_encoder_cache[key]
+
 def build_embs(
         prompts: List[str],
         text_encoder_name: str,
@@ -130,7 +145,7 @@ def build_embs(
         device: str,
         desc_embs_dir: str = None,
         batch_size: int = 1,
-        seq_len: Optional[int] = 8,
+        seq_len: Optional[int] = 64,
     ) -> torch.Tensor:
     """
     生成文本描述的嵌入向量，并根据指定长度进行填充或截断。
@@ -143,13 +158,19 @@ def build_embs(
     # 扩展 prompts 到 batch_size 数量
     prompts = prompts * batch_size if len(prompts) != batch_size else prompts
 
-    # 初始化对应的文本编码器模型
-    if text_encoder_name == "microsoft/phi-1_5":
-        model = TextEncoderLLM(model_name=text_encoder_name, device=device, freeze_text_encoder=freeze_text_encoder)
-    elif text_encoder_name == "bert-base-uncased":
-        model = TextEncoderBert(model_name=text_encoder_name, device=device, freeze_text_encoder=freeze_text_encoder)
-    else:
-        raise NotImplementedError(f"Unsupported text encoder name: {text_encoder_name}")
+    # 使用缓存的文本编码器
+    model = get_text_encoder(text_encoder_name, device, freeze_text_encoder)
+
+    # 检查 prompt 缓存
+    cache_key = (tuple(prompts), text_encoder_name)
+    if cache_key in _prompt_embs_cache:
+        desc_embs = _prompt_embs_cache[cache_key].to(device)
+        if seq_len is not None:
+            if desc_embs.shape[1] < seq_len:
+                desc_embs = torch.nn.functional.pad(desc_embs, (0, 0, 0, seq_len - desc_embs.shape[1]))
+            elif desc_embs.shape[1] > seq_len:
+                desc_embs = desc_embs[:, :seq_len, :]
+        return desc_embs
 
     # 获取文本嵌入
     desc_embs, _ = model(prompts)
@@ -161,6 +182,10 @@ def build_embs(
             desc_embs = torch.nn.functional.pad(desc_embs, pad_size)
         elif desc_embs.shape[1] > seq_len:
             desc_embs = desc_embs[:, :seq_len, :]
+
+    # 存入缓存
+    if freeze_text_encoder:
+        _prompt_embs_cache[cache_key] = desc_embs.detach().cpu()
 
     # 保存嵌入向量（如果指定了路径）
     if desc_embs_dir is not None:

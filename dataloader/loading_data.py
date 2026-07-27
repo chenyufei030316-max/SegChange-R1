@@ -26,8 +26,9 @@ class DeNormalize(object):
 def loading_data(cfg):
     data_root = cfg.data.data_root
     data_format = cfg.data.data_format
-    train_dataset = Building(data_root, train=True, data_format=data_format, **cfg.data.transforms.to_dict())
-    val_dataset = Building(data_root, train=False, data_format=data_format)
+    img_size = cfg.model.img_size
+    train_dataset = Building(data_root, train=True, data_format=data_format, img_size=img_size, **cfg.data.transforms.to_dict())
+    val_dataset = Building(data_root, train=False, data_format=data_format, img_size=img_size)
     return train_dataset, val_dataset
 
 
