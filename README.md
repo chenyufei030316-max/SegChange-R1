@@ -201,3 +201,68 @@ If you use RT-FINE in your research, please cite:
 }
 ```
 </details>
+---
+
+# RTS Change Detection Ablation (this branch)
+
+Ablation over how much semantic/text guidance helps Arctic retrogressive thaw slump (RTS)
+change detection, on top of upstream
+[SegChange-R1](https://arxiv.org/abs/2506.17944). See the top-level README for
+install/environment setup (conda env `segchange`).
+
+## Experiments
+
+Four configs in `configs/`, each with its own `data.data_root` and `work_dirs` name:
+
+| config | text input | text encoder | frozen |
+|---|---|---|---|
+| `config_exp1_notext.yaml` | none | bert-base-uncased (unused) | — |
+| `config_exp2_static.yaml` | same fixed phrase for every image | bert-base-uncased | yes |
+| `config_exp3_dynamic.yaml` | real per-image description | bert-base-uncased | yes |
+| `config_exp4_llm.yaml` | same per-image description as exp3 | microsoft/phi-1_5 | yes |
+
+exp1 vs exp2: does text presence alone help, even with zero per-image information.
+exp2 vs exp3: does per-image-accurate text help over a generic fixed phrase.
+exp3 vs exp4: does a larger causal-LM text encoder beat BERT, holding the text and the
+frozen/not-fine-tuned setting fixed (both encoders frozen, so this isolates encoder choice).
+
+## Data layout
+
+Each `data/change/exp{1,2,3,4}_*/` needs:
+```
+train/{A,B,label}/   # image pairs + change mask, same filenames across A/B/label
+val/{A,B,label}/
+train/prompts.txt    # absent for exp1_notext
+val/prompts.txt
+```
+
+`prompts.txt`: one line per image, **double-space separated**:
+```
+<filename>.png  <description text>
+```
+`exp2_static`: every line has the same generic phrase (carries no per-image signal, by
+design). `exp3_dynamic` / `exp4_llm`: real per-image descriptions, identical between the two
+(same text, different downstream encoder). Negative (no-change) samples use a fixed phrase:
+`"No retrogressive thaw slumps / No change in the retrogressive thaw slumps area."`
+
+## Running
+
+```bash
+python train.py -c configs/config_exp1_notext.yaml
+python train.py -c configs/config_exp2_static.yaml
+python train.py -c configs/config_exp3_dynamic.yaml
+python train.py -c configs/config_exp4_llm.yaml
+```
+
+`config_exp4_llm.yaml` uses `microsoft/phi-1_5`; set `HF_HUB_OFFLINE=1
+TRANSFORMERS_OFFLINE=1` if the weights are already cached locally, to avoid a network stall
+on startup.
+
+## Metrics
+
+`engines/engines.py::evaluate()` accumulates predictions/labels over **every pixel of the
+entire validation set** (not per-image averages) before computing precision/recall/F1/IoU
+once at the end — same global-aggregation approach as the ChangeCLIP branch in this project's
+sibling repo. This is single-class (sigmoid) change detection, so there's no separate
+background class to report: `iou`/`f1`/etc. are already the positive (change) class values,
+and that's what `_save_best_models` uses to pick `best_iou.pth`.
