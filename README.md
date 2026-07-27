@@ -257,12 +257,3 @@ python train.py -c configs/config_exp4_llm.yaml
 `config_exp4_llm.yaml` uses `microsoft/phi-1_5`; set `HF_HUB_OFFLINE=1
 TRANSFORMERS_OFFLINE=1` if the weights are already cached locally, to avoid a network stall
 on startup.
-
-## Metrics
-
-`engines/engines.py::evaluate()` accumulates predictions/labels over **every pixel of the
-entire validation set** (not per-image averages) before computing precision/recall/F1/IoU
-once at the end — same global-aggregation approach as the ChangeCLIP branch in this project's
-sibling repo. This is single-class (sigmoid) change detection, so there's no separate
-background class to report: `iou`/`f1`/etc. are already the positive (change) class values,
-and that's what `_save_best_models` uses to pick `best_iou.pth`.
