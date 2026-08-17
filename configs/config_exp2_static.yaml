@@ -1,10 +1,11 @@
+# Run (from SegChange-R1 repo root; conda activate segchange first): python train.py -c configs/config_exp2_static.yaml
 name: 'exp2-static'
 device: 'cuda:0'
 seed: 42
 output_dir: ./work_dirs
 num_workers: 4
 resume: null
-prompt: 'retrogressive thaw slump, arctic landslide, thermokarst, permafrost degradation'
+prompt: 'Retrogressive thaw slump changes.'
 onnx_weights: './examples/ONNXRuntime/weights'
 
 data:
@@ -59,6 +60,7 @@ training:
   batch_size: 4
   eval_freq: 1
   start_eval: 1
+  early_stop_patience: 30
   threshold: 0.5
 
 test:

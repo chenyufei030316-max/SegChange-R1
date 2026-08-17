@@ -1,0 +1,76 @@
+# Run (from SegChange-R1 repo root; conda activate segchange first): python train.py -c configs/config_exp2_static_seed2.yaml
+name: 'exp2-static-seed2'
+device: 'cuda:0'
+seed: 2
+output_dir: ./work_dirs
+num_workers: 4
+resume: null
+prompt: 'retrogressive thaw slump, arctic landslide, thermokarst, permafrost degradation'
+onnx_weights: './examples/ONNXRuntime/weights'
+
+data:
+  data_root: './data/change/exp2_static'
+  data_format: 'default'
+  transforms:
+    apply_prob: 0.5
+    color_jitter: 0.2
+    rotation_degree: 90
+    gamma_range: [0.8, 1.2]
+    affine_degree: 15
+    erase_prob: 0.3
+    erase_ratio: [0.02, 0.15]
+    blur_sigma: 0.3
+    clahe: 0.5
+
+model:
+  num_classes: 1
+  backbone_name: "swin_base_patch4_window7_224"
+  bev_name: "LinearAttention"
+  fpn_type: "L-FPN"
+  use_ega: true
+  diff_attention: "CBAM"
+  out_dims: [256, 256, 256, 256]
+  use_token_connector: False
+  pretrained: True
+  img_size: 256
+  text_encoder_name: "bert-base-uncased"
+  desc_embs: null
+  freeze_text_encoder: True
+
+loss:
+  weight_ce: 1.0
+  weight_dice: 1.5
+  weight_focal: 1.5
+  alpha: 0.6
+  gamma: 2.0
+  weight_bcl: 0.3
+
+logger:
+  log_name: 'Seg_log'
+  level: 'INFO'
+
+training:
+  start_epoch: 1
+  epochs: 200
+  scheduler: 'step'
+  lr: 0.0001
+  lr_backbone: 0.00001
+  lr_drop: 80
+  weight_decay: 0.0001
+  batch_size: 4
+  eval_freq: 1
+  start_eval: 1
+  early_stop_patience: 30
+  threshold: 0.5
+
+test:
+  img_dirs: './data/change'
+  batch_size: 1
+  threshold: 0.5
+  postprocess: False
+  device: 'cuda:0'
+  name: "test"
+  weights_dir: './work_dirs/exp2-static/checkpoints/best_iou.pth'
+  save_dir: "./work_dirs"
+  show: True
+  show_overlay: False

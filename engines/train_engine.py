@@ -162,6 +162,10 @@ class TrainingEngine:
         self.iou_list = []
         self.accuracy_list = []
 
+        # early stopping: 连续 early_stop_patience 次验证iou没有提升就停止
+        self.early_stop_patience = getattr(self.cfg.training, 'early_stop_patience', None)
+        self.no_improve_count = 0
+
     def _setup_logging_tools(self):
         """设置日志记录工具"""
         # 创建tensorboard
@@ -263,7 +267,9 @@ class TrainingEngine:
         else:
             checkpoint_path = os.path.join(self.ckpt_dir, f'{checkpoint_type}.pth')
 
-        torch.save(checkpoint_data, checkpoint_path)
+        tmp_path = checkpoint_path + '.tmp'
+        torch.save(checkpoint_data, tmp_path)
+        os.replace(tmp_path, checkpoint_path)
 
     def _evaluate_one_epoch(self, epoch):
         """评估一个epoch"""
@@ -364,6 +370,18 @@ class TrainingEngine:
 
                 # 保存最佳模型
                 self._save_best_models(epoch, train_stat, eval_metrics)
+
+                # early stopping
+                if self.early_stop_patience is not None:
+                    if eval_metrics['iou'] == np.max(self.iou_list):
+                        self.no_improve_count = 0
+                    else:
+                        self.no_improve_count += 1
+                    if self.no_improve_count >= self.early_stop_patience:
+                        self.logger.info(
+                            'Early stopping at epoch %d: iou did not improve for %d evaluations (best iou=%.4f)' % (
+                                epoch, self.early_stop_patience, np.max(self.iou_list)))
+                        break
 
             # 保存结果到CSV
             self._save_results_csv()
